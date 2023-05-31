@@ -8,36 +8,82 @@
     $koneksi = mysqli_connect($server, $user, $password, $db) or die(mysqli_error($koneksi));
 
 
+
+    //Kode otomatis
+    $q = mysqli_query($koneksi, "SELECT kode FROM tbarang ORDER BY kode desc limit 1");
+    $datax = mysqli_fetch_array($q);
+    if($datax){
+        $no_terakhir = substr($datax['kode'], -3);
+        $no = $no_terakhir + 1;
+
+        if($no > 0 and $no < 10){
+            $kode = "00" . $no;
+        }else if ($no > 100){
+            $kode = $no;
+        }
+    }else{
+        $kode = "001";
+    }
+    $tahun = date('Y');
+    $vkode= "INV-" . $tahun . '-' . $kode;
+    //INV-2023-001
+
     //jika tombol simpan diklik
     if(isset($_POST['bsimpan'])){
-
-        //Data baru akan disimpan kedalam variabel simpan
-        $simpan_query = "INSERT INTO tbarang (kode, nama, asal, jumlah, satuan, tanggal_diterima) 
-                         VALUE ( '$_POST[tkode]',
-                                  '$_POST[tnama]',
-                                  '$_POST[tasal]',
-                                  '$_POST[tjumlah]',
-                                  '$_POST[tsatuan]',
-                                  '$_POST[ttanggal_diterima]')";
-        $simpan = mysqli_query($koneksi, $simpan_query) or die ("Proses update data GAGAL! <br> ");
-
-        //uji jika simpan data sukses
-        if($simpan){
-            echo "<script>
-                        alert('Simpan Data Sukses!');
-                        document.location = 'index.php';
-                  </script>";
+        //pengujian apakkah data akan diedit atau disimpan baru
+        if(isset($_GET['hal']) == "edit"){
+            //data akan di edit
+            $edit = mysqli_query($koneksi, "UPDATE tbarang SET 
+                                                   nama = '$_POST[tnama]',
+                                                   asal = '$_POST[tasal]',
+                                                   jumlah = '$_POST[tjumlah]',
+                                                   satuan = '$_POST[tsatuan]',
+                                                   tanggal_diterima = '$_POST[ttanggal_diterima]'
+                                                   WHERE id_barang = '$_GET[id]'
+                                 ");
+             //uji jika edit data sukses
+            if($edit){
+                echo "<script>
+                            alert('Edit Data Sukses!');
+                            document.location = 'index.php';
+                    </script>";
+            }else{
+                echo "<script>
+                            alert('Edit Data Sukses!');
+                            document.location = 'index.php';
+                    </script>";
+            }
         }else{
+            //Data akan disimpan
+            //Data baru akan disimpan kedalam variabel simpan
+            $simpan_query = "INSERT INTO tbarang (kode, nama, asal, jumlah, satuan, tanggal_diterima) 
+            VALUE ( '$_POST[tkode]',
+                    '$_POST[tnama]',
+                    '$_POST[tasal]',
+                    '$_POST[tjumlah]',
+                    '$_POST[tsatuan]',
+                    '$_POST[ttanggal_diterima]')";
+            $simpan = mysqli_query($koneksi, $simpan_query) or die ("Proses update data GAGAL! <br> ");
+
+            //uji jika simpan data sukses
+            if($simpan){
             echo "<script>
-                        alert('Simpan Data Sukses!');
-                        document.location = 'index.php';
-                  </script>";
+                alert('Simpan Data Sukses!');
+                document.location = 'index.php';
+            </script>";
+            }else{
+            echo "<script>
+                alert('Simpan Data Sukses!');
+                document.location = 'index.php';
+            </script>";
+            }
+
         }
+
     }
 
 
     //deklarasi variabel untuk menampung data yang akan diedit
-    $vkode = "";
     $vnama = "";
     $vasal = "";
     $vjumlah = "";
@@ -61,6 +107,21 @@
                 $vsatuan = $data['satuan'];
                 $vtanggal_diterima = $data['tanggal_diterima'];
             }
+        }else if($_GET['hal'] == "hapus") {
+            //mempersiapkan hapus data
+            $hapus = mysqli_query($koneksi, "DELETE FROM tbarang WHERE id_barang = '$_GET[id]' ");
+             //uji jika hapus data sukses
+             if($hapus){
+                echo "<script>
+                    alert('Hapus Data Sukses!');
+                    document.location = 'index.php';
+                </script>";
+                }else{
+                echo "<script>
+                    alert('Hapus Data Sukses!');
+                    document.location = 'index.php';
+                </script>";
+                }
         }
     }
 ?>
@@ -103,8 +164,8 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Asal Barang</label>
-                                <select class="form-select" name="tasal" value="<?= $vasal?>">
-                                    <option>-Pilih-</option>
+                                <select class="form-select" name="tasal">
+                                    <option value="<?= $vasal?>"><?= $vasal?></option>
                                     <option value="Pembelian">Pembelian</option>
                                     <option value="Hibah">Hibah</option>
                                     <option value="Sumbangan">Sumbangan</option>
@@ -123,8 +184,8 @@
                                 <div class="col">
                                     <div class="mb-3">
                                         <label class="form-label">Satuan</label>
-                                        <select class="form-select" name="tsatuan" value="<?= $vsatuan?>">
-                                            <option>-Pilih-</option>
+                                        <select class="form-select" name="tsatuan">
+                                            <option value="<?= $vsatuan?>"><?= $vsatuan?></option>
                                             <option value="Unit">Unit</option>
                                             <option value="Kotak">Kotak</option>
                                             <option value="Pcs">Pcs</option>
@@ -167,12 +228,12 @@
                     </div>
                     <div class="card-body">
                         <div class="col-md-8 mx-auto">
-                            <form method="POST"">
+                            <form method="POST">
                                 <div class="input-group mb-3">
-                                    <input type="text" name="tcari" class="rounded-pill form-control" placeholder="Masukan Kata Pencarian Anda!">
+                                    <input type="text" name="tcari" value="<?= @$_POST['tcari']?>" class="rounded-pill form-control" placeholder="Masukan Kata Pencarian Anda!">
                                     <img src="image.png" alt="">
-                                    <button class="btn btn-primary rounded-pill col-md-2 mx-3" type="bcari">Cari</button>
-                                    <button class="btn btn-danger rounded-pill col-md-2" type="breset">Reset</button>
+                                    <button class="btn btn-primary rounded-pill col-md-2 mx-3" name="bcari" type="submit">Cari</button>
+                                    <button class="btn btn-danger rounded-pill col-md-2" name="breset" type="submit">Reset</button>
                                 </div>
                             </form>
                         </div>
@@ -189,8 +250,16 @@
                             <?php
                                 //Persiapan menampilkan data
                                 $no = 1;
-                                $data_query = "SELECT * FROM tbarang order by id_barang desc";
-                                $tampil = mysqli_query($koneksi, $data_query);
+                                //pencarian data 
+                                //jika tombol cari diklik
+                                if(isset($_POST['bcari'])){
+                                    //tampilkan data yang dicari
+                                    $keyword = $_POST['tcari'];
+                                    $q = "SELECT * FROM tbarang WHERE kode like '%$keyword%' or nama like '%$keyword%' ORDER BY id_barang desc";
+                                }else {
+                                    $q = "SELECT * FROM tbarang ORDER BY id_barang desc";
+                                }
+                                $tampil = mysqli_query($koneksi, $q);
                                 while($data = mysqli_fetch_array($tampil)) :
                             ?>
                             <tr>
@@ -202,7 +271,8 @@
                                 <td><?= $data['tanggal_diterima'] ?></td>
                                 <td>
                                     <a href="index.php?hal=edit&id=<?= $data['id_barang'] ?>" class="btn btn-warning">Edit</a>
-                                    <a href="index.php?hal=hapus&id=<?= $data['id_barang'] ?>" class="btn btn-danger">Hapus</a>
+                                    <a href="index.php?hal=hapus&id=<?= $data['id_barang'] ?>" class="btn btn-danger"
+                                      onclick="return confirm('Apakah anda yakin akan hapus data ini?')">Hapus</a>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
